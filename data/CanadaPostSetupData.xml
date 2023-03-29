@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <entity-facade-xml type="seed">
-
+    <moqui.basic.Enumeration description="CanadaPost REST API TOKEN" enumId="SgoApiToken" enumTypeId="ShippingGatewayType"/>
+    <moqui.basic.Enumeration description="CanadaPost CUSTOMER NUMBER" enumId="SgoCustomerNumber" enumTypeId="ShippingGatewayType"/>
+    <moqui.basic.Enumeration description="CanadaPost CONTRACT ID" enumId="SgoContractId" enumTypeId="ShippingGatewayType"/>
+    <moqui.basic.Enumeration description="CanadaPost REST API" enumId="ShGtwyCanadaPost" enumTypeId="ShippingGatewayType"/>
+    <moqui.basic.Enumeration description="CanadaPost Gateway Options" enumId="EgCanadaPostOption" enumTypeId="EnumGroup"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="EgCanadaPostOption" enumId="SgoApiToken"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="EgCanadaPostOption" enumId="SgoContractId"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="EgCanadaPostOption" enumId="SgoCustomerNumber"/>
 </entity-facade-xml>
