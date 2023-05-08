@@ -443,4 +443,61 @@
             </script>
         </actions>
     </service>
+
+
+    <!--  =============================================  -->
+    <!--  ================ GET ARTIFACT ===============  -->
+    <!--  =============================================  -->
+    <service verb="get" noun="Artifact">
+        <in-parameters>
+            <parameter name="LabelLink" required="true"/>
+            <parameter name="shippingGatewayConfigId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="labelData"/>
+            <parameter name="errMsg"/>
+        </out-parameters>
+        <actions>
+            <!-- ~~~~~~~~~~~~~ Authorization ~~~~~~~~~~~~~ -->
+
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="apiTokenOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoApiToken"/>
+            </entity-find-one>
+
+            <set field="apiToken" from="apiTokenOpt?.optionValue" type="String"/>
+            <if condition="!apiToken &amp;&amp; !contractId &amp;&amp; !customerNumber">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Get Artifact"/></if>
+
+            <set field="labelData" />
+            <script>
+                import org.apache.pdfbox.pdmodel.PDDocument;
+                import org.apache.pdfbox.rendering.PDFRenderer;
+                import org.apache.pdfbox.rendering.ImageType;
+                import java.awt.image.BufferedImage;
+                import javax.imageio.ImageIO;
+                <![CDATA[
+                    org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.GET)
+                    restClient.addHeader("Authorization", "Basic ${apiToken}")
+                    restClient.acceptContentType("application/pdf")
+                    restClient.contentType("application/pdf")
+                    restClient.uri("${LabelLink}")
+                    org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
+                    if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
+                        errMsg = restResponse.xmlNode()
+                        return
+                    }
+                    getArtifactResponse = restResponse.bytes()
+                    document = PDDocument.load(getArtifactResponse);
+                    PDFRenderer pdfRenderer = new PDFRenderer(document);
+                    BufferedImage bim = pdfRenderer.renderImageWithDPI(0, 300, ImageType.RGB);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ImageIO.write(bim, "png", baos);
+                    byte[] imageBytes = baos.toByteArray();
+                    baos.flush();
+                ]]>
+            </script>
+            <set field="labelData" from="imageBytes"/>
+        </actions>
+    </service>
 </services>
