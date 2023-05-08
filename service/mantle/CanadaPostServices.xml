@@ -441,6 +441,32 @@
                             responseMap = ContextJavaUtil.jacksonMapper.readValue(json, Map.class)
                         ]]>
             </script>
+            <set field="Links" type="List" from="responseMap.links.link"/>
+            <set field="LabelLink"/>
+            <iterate list="Links" entry="link">
+                <set field="rel" from="link.rel"/>
+                <if condition="rel=='label'">
+                    <set field="LabelLink" from="link.href"/>
+                </if>
+            </iterate>
+            <set field="labelData"/>
+            <service-call name="mantle.CanadaPostServices.get#Artifact" in-map="context" out-map="context"/>
+
+            <!--  ~~~~~~~~~~~~~ ShipmentPackageRouteSeg Entity Update ~~~~~~~~~~~~~  -->
+
+            <entity-find-one entity-name="mantle.shipment.ShipmentPackageRouteSeg" value-field="packageRouteSeg">
+                <field-map field-name="shipmentId"/>
+                <field-map field-name="shipmentRouteSegmentSeqId"/>
+                <field-map field-name="shipmentPackageSeqId"/>
+            </entity-find-one>
+            <if condition="!packageRouteSeg">
+                <return error="true" message="ShipmentPackageRouteSeg not set for Shipment Package ${shipmentId}:${shipmentPackageSeqId} to store the response !!!"/>
+            </if>
+            <set field="packageRouteSeg.gatewayLabelId" from="responseMap.'shipment-id'"/>
+            <set field="packageRouteSeg.trackingCode" from="responseMap.'tracking-pin'"/>
+            <set field="packageRouteSeg.labelImage" from="labelData"/>
+            <entity-update value-field="packageRouteSeg"/>
+            <log level="info" message="Update Successful"/>
         </actions>
     </service>
 
