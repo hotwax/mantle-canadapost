@@ -6,33 +6,42 @@
 
     <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGround"
                                                    description="CanadaPost Regular Parcel"  gatewayServiceCode="DOM.RP"/>
+    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGroundCom"
+                                                   description="CanadaPost Regular Parcel for USA"  gatewayServiceCode="USA.PW.PAK"/>
     <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDayPri"
                                                    description="CanadaPost Priority"  gatewayServiceCode="DOM.PC"/>
     <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay"
                                                    description="CanadaPost Expedited Parcel"  gatewayServiceCode="DOM.EP"/>
+    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay"
+                                                   description="Expedited Parcel USA"  gatewayServiceCode="USA.EP"/>
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="CP_Package" description="Canada Post Package" dimensionUomId="LEN_cm"
+                                     boxLength="35" boxWidth="20" boxHeight="10" gatewayBoxId="package"/>
 
     <mantle.shipment.carrier.ShippingGatewayConfig shippingGatewayConfigId="CANADA_POST_DEMO"
                                                    shippingGatewayTypeEnumId="ShGtwyCanadaPost" description="CanadaPost API Demo"
-                                                   getRateServiceName="">
+                                                   getRateServiceName="mantle.CanadaPostServices.get#ShippingRates" >
 
         <options optionEnumId="SgoApiToken" optionValue="NmU5M2Q1Mzk2ODg4MTcxNDowYmZhOWZjYjk4NTNkMWY1MWVlNTdh"/>
         <options optionEnumId="SgoContractId" optionValue="42708517"/>
         <options optionEnumId="SgoCustomerNumber" optionValue="2004381"/>
 
         <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="DOM.RP"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGroundCom" gatewayServiceCode="USA.PW.PAK"/>
         <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDayPri" gatewayServiceCode="DOM.PC"/>
         <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="DOM.EP"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="USA.EP"/>
 
+        <boxTypes shipmentBoxTypeId="CP_Package" gatewayBoxId="package"/>
 
     </mantle.shipment.carrier.ShippingGatewayConfig>
 
     <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
     <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="DefaultShipmentGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
 
-    <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
-    <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
+    <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
+    <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
 
-    <mantle.product.store.ProductStore productStoreId="POPC_DEFAULT">
+    <mantle.product.store.ProductStore productStoreId="POPC_CN_DEFAULT">
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthGround" />
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDayPri" />
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDay" />

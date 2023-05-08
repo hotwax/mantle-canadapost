@@ -2,12 +2,12 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
     <!--  =============================================  -->
-    <!--  ================== Get Rates ================  -->
+    <!--  ================== GET RATES ================  -->
     <!--  =============================================  -->
-    <service verb="request" noun="ShippingRates">
+    <service verb="get" noun="ShippingRates">
         <out-parameters>
-            <parameter name="responseMap"/>
             <parameter name="requestMap"/>
+            <parameter name="responseMap"/>
             <parameter name="errMsg"/>
         </out-parameters>
         <implements service="mantle.shipment.CarrierServices.get#ShippingRate"/>
@@ -31,10 +31,10 @@
             <set field="apiToken" from="apiTokenOpt?.optionValue" type="String"/>
             <set field="contractId" from="contractIdOpt?.optionValue" type="String"/>
             <set field="customerNumber" from="customerNumberOpt?.optionValue" type="String"/>
-            <if condition="!apiToken &amp;&amp; !contractId &amp;&amp; !customerNumber">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Shipping rates"/></if>
+            <if condition="!apiToken">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to get Shipping rates"/></if>
             <if condition="!contractId &amp;&amp; !customerNumber">
-                <log level="warn" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, not requesting Shipping rates"/></if>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to get Shipping rates"/></if>
 
             <!-- ~~~~~~~~~~~~~ shipment:routeSegment ~~~~~~~~~~~~~ -->
 
@@ -57,7 +57,7 @@
             <!-- ~~~~~~~~~~~~~ Address From ~~~~~~~~~~~~~~~~ -->
 
             <if condition="!routeSegment.originPostalContactMechId &amp;&amp; routeSegment.originFacilityId">
-                <service-call name="mantle.facility.ContactServices.get#FacilityDefaultShipOrigin" out-map="facOriginOut" in-map="[facilityId:routeSegment.originFacilityId]"/>
+                <service-call name="mantle.facility.ContactServices.get#FacilityDefaultShipOrigin" out-map="facOriginOut" in-map="[facilityId:facilityId]"/>
                 <if condition="facOriginOut.postalContactMechId">
                     <set field="originPostalContactMechId" from="facOriginOut.postalContactMechId"/>
                     <set field="routeSegment.originPostalContactMechId" from="originPostalContactMechId"/>
@@ -100,7 +100,6 @@
                     <field-map field-name="toUomId" from="shipmentPackage.weightUomId"/>
                     <field-map field-name="uomId" value="WT_kg"/>
                 </entity-find-one>
-                <log level="warn" message="=++++++++++${conversion}+++++++++++===================="/>
                 <set field="weight" from="shipmentPackage.weight/conversion.conversionFactor" type="Integer"/></if>
 
             <!-- ~~~~~~~~~~~~~ Service Code ~~~~~~~~~~~~~~~~ -->
@@ -108,40 +107,45 @@
             <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayMethod" value-field="gatewayMethod">
                 <field-map field-name="shippingGatewayConfigId"/>
                 <field-map field-name="carrierPartyId" from="routeSegment.carrierPartyId"/>
+                <field-map field-name="shipmentMethodEnumId"/>
             </entity-find-one>
             <set field="serviceCode"/>
             <if condition="!gatewayMethod.gatewayServiceCode">
                 <then>
-                    <return error="true" message="Gateway method ${shipmentMethodEnumId} not set on for ${shippingGatewayConfigId}"/>
+                    <return error="true" message="Gateway method ${shipmentMethodEnumId} not set for ${shippingGatewayConfigId}"/>
                 </then>
                 <else>
                     <set field="serviceCode" from="gatewayMethod.gatewayServiceCode"/>
                 </else>
             </if>
 
-            <set field="requestMap" type="Map" from="[customerNumber:customerNumber,contractId:contractId,weight:weight,serviceCode:serviceCode,originPostalCode:originPostalCode,destPostalCode:destPostalCode]"/>
+            <set field="requestMap" type="Map" from="[customerNumber:customerNumber,contractId:contractId,weight:weight,
+                                serviceCode:serviceCode,originPostalCode:originPostalCode,destPostalCode:destPostalCode]"/>
+
             <script>
+                import org.json.XML;
+                import org.json.JSONObject;
+                import groovy.json.JsonSlurper;
                 <![CDATA[
                     StringWriter sw =  new StringWriter();
                     ec.resourceFacade.ftlTemplateRenderer.render("component://mantle-canadapost/template/GetRates.xml.ftl", sw)
-                    //ec.logger.info("========================"+sw.toString())
                     org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
                     restClient.contentType("application/vnd.cpc.ship.rate-v4+xml")
                     restClient.addHeader("Authorization", "Basic ${apiToken}")
                     restClient.text(sw.toString())
-                    //ec.logger.info(restClient.getBodyText())
                     restClient.uri("https://ct.soa-gw.canadapost.ca/rs/ship/price")
-                    //ec.logger.info("++++++++"+restClient.getUri())
                     org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
-                        errMsg = restResponse.text()
+                        errMsg = restResponse.xmlNode()
                         return
                     }
-                    responseMap = restResponse.text()
+                    responseXml = restResponse.text()
+                    JSONObject json = XML.toJSONObject(responseXml);
+                    String jsonPrettyPrintString = json.toString(); // json pretty print
+                    JsonSlurper jsonSlurper = new JsonSlurper();
+                    responseMap = (Map<String, Object>) jsonSlurper.parseText(jsonPrettyPrintString);
                 ]]>
             </script>
-
         </actions>
     </service>
-
 </services>
