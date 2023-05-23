@@ -526,4 +526,161 @@
             <set field="labelData" from="imageBytes"/>
         </actions>
     </service>
+
+    <!-- ============================================= -->
+    <!-- ============ TRANSMIT SHIPMENT ============== -->
+    <!-- ============================================= -->
+    <service verb="transmit" noun="Shipment">
+        <in-parameters>
+            <parameter name="facilityId" required="true"/>
+            <parameter name="shippingGatewayConfigId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="requestMap"/>
+            <parameter name="responseMap"/>
+            <parameter name="errMsg"/>
+        </out-parameters>
+        <actions>
+            <!-- ~~~~~~~~~~~~~ Authorization ~~~~~~~~~~~~~ -->
+
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="apiTokenOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoApiToken"/>
+            </entity-find-one>
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="contractIdOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoContractId"/>
+            </entity-find-one>
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="customerNumberOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoCustomerNumber"/>
+            </entity-find-one>
+            <set field="apiToken" from="apiTokenOpt?.optionValue" type="String"/>
+            <set field="contractId" from="contractIdOpt?.optionValue" type="String"/>
+            <set field="customerNumber" from="customerNumberOpt?.optionValue" type="String"/>
+            <if condition="!apiToken &amp;&amp; !contractId &amp;&amp; !customerNumber">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Shipping rates"/></if>
+            <if condition="!customerNumber">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, not requesting Shipping rates"/></if>
+
+
+            <!-- ~~~~~~~~~~~~~ manifest Address ~~~~~~~~~~~~~ -->
+
+            <entity-find-one entity-name="mantle.facility.Facility" value-field="facility">
+                <field-map field-name="facilityId"/>
+            </entity-find-one>
+
+            <if condition="!facility"><return error="true" message="No Facility found with facilityId:${facilityId}"/> </if>
+            <set field="groupIds" from="[facility.facilityName]"/>
+            <set field="manifestCompanyName" from="facility.facilityName"/>
+            <set field="facilityPartyId" from="facility.ownerPartyId"/>
+            <entity-find-one entity-name="mantle.facility.FacilityContactMech" value-field="facilityContactMech">
+                <field-map field-name="facilityId"/>
+                <field-map field-name="contactMechPurposeId" value="PostalPrimary"/>
+            </entity-find-one>
+
+            <set field="facilityContactMechId" from="facilityContactMech.contactMechId"/>
+            <if condition="!facilityContactMechId">
+                <return error="true" message="facilityContactMechId not found on facility ${facilityId}"/><return/></if>
+
+            <entity-find-one entity-name="mantle.party.contact.PostalAddress" value-field="facilityPostalAddress">
+                <field-map field-name="contactMechId" from="facilityContactMechId"/></entity-find-one>
+            <if condition="!facilityPostalAddress">
+                <return error="true" message="Facility Postal Address is not found for on facility ${facilityId}"/></if>
+
+            <set field="manifestName" from="facilityPostalAddress.toName"/>
+            <set field="facilityTelecomContactMechId" from="facilityPostalAddress.telecomContactMechId"/>
+            <if condition="!facilityTelecomContactMechId">
+                <return error="true" message="telecomContactMechId not set for Facility ${facilityContactMechId}"/>
+                <else>
+                    <entity-find-one entity-name="mantle.party.contact.TelecomNumber" value-field="facilityTelecomNumber">
+                        <field-map field-name="contactMechId" from="facilityTelecomContactMechId"/>
+                    </entity-find-one>
+                    <set field="manifestPhoneNumber" from="'+1'+facilityTelecomNumber.areaCode+facilityTelecomNumber.contactNumber"/>
+                </else>
+            </if>
+
+            <set field="manifestAddress1" from="facilityPostalAddress.address1"/>
+            <if condition="!manifestAddress1">
+                <return error="true" message="manifestAddress1 not found on facility ${facilityId}"/><return/></if>
+            <set field="manifestCity" from="facilityPostalAddress.city"/>
+            <set field="manifestState" />
+            <if condition="facilityPostalAddress.stateProvinceGeoId">
+                <entity-find-one entity-name="moqui.basic.Geo" value-field="facilityStateGeo">
+                    <field-map field-name="geoId" from="facilityPostalAddress.stateProvinceGeoId"/>
+                </entity-find-one>
+                <set field="manifestState" from="facilityStateGeo.geoCodeAlpha2"/>
+            </if>
+
+            <set field="manifestCountry" />
+            <if condition="facilityPostalAddress.countryGeoId">
+                <entity-find-one entity-name="moqui.basic.Geo" value-field="facilityCountryGeo">
+                    <field-map field-name="geoId" from="facilityPostalAddress.countryGeoId"/>
+                </entity-find-one>
+                <set field="manifestCountry" from="facilityCountryGeo.geoCodeAlpha2"/>
+            </if>
+
+            <set field="manifestPostalCode" from="facilityPostalAddress.postalCode" type="String"/>
+            <if condition="!manifestPostalCode">
+                <return error="true" message="facility Postal code is not found for ContactMechId: ${facilityContactMechId}"/></if>
+
+            <set field="statusIdList" from="['ShipApproved','ShipPacked','ShipCancelled']"/>
+            <entity-find entity-name="mantle.shipment.Shipment" list="ShipmentsList">
+                <econdition field-name="fromPartyId" from="facilityPartyId"/>
+                <econdition field-name="shipmentTypeEnumId" value="ShpTpSales"/>
+                <econdition field-name="statusId" operator="in" from="statusIdList"/>
+                <select-field field-name="shipmentId"/>
+            </entity-find>
+            <set field="excludedShipmentIds" from="[]"/>
+            <iterate list="ShipmentsList" entry="shipment">
+                <set field="excludedShipmentId" from="shipment.shipmentId"/>
+                <script>excludedShipmentIds.add(excludedShipmentId)</script>
+            </iterate>
+            <set field="excludedShipments" from="[]"/>
+            <if condition="excludedShipmentIds">
+                <entity-find entity-name="mantle.shipment.ShipmentPackageRouteSeg" list="excludedPackageRouteSeg" >
+                    <econdition field-name="shipmentId" operator="in" from="excludedShipmentIds"/>
+                </entity-find>
+                <log level="info" message="---------------------${excludedShipmentIds}_______"/>
+                <iterate list="excludedPackageRouteSeg" entry="excludedShipment">
+                    <set field="excludedGatewayLabelId" from="excludedShipment.gatewayLabelId"/>
+                    <if condition="excludedGatewayLabelId">
+                        <script>excludedShipments.add(excludedGatewayLabelId)</script></if>
+                </iterate>
+                <else><log type="warn" message="Not found any shipments with facility:${facilityId} to transmit!!"/></else>
+            </if>
+
+            <set field="requestMap" from="[transmitSet:[groupIds:groupIds,requestedShippingPoint:manifestPostalCode,cpcPickIndicator:true,
+                detailedManifests:true,methodOfPayment:'Account',manifestAddress:[manifestCompany:manifestCompanyName,manifestName:manifestName,
+                phoneNumber:manifestPhoneNumber,addressDetails:[addressLine1:manifestAddress1,city:manifestCity,provState:manifestState,
+                countryCode:manifestCountry,postalZipCode:manifestPostalCode]],excludedShipments:excludedShipments]]"/>
+            <script>
+                import groovy.json.JsonSlurper;
+                import org.json.JSONObject;
+                import org.json.XML;
+
+                <![CDATA[
+                    StringWriter sw =  new StringWriter();
+                    ec.resourceFacade.ftlTemplateRenderer.render("component://mantle-canadapost/template/TransmitShipment.xml.ftl", sw)
+                    org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
+                    restClient.addHeader("Authorization", "Basic ${apiToken}")
+                    restClient.addHeader("Accept", "application/vnd.cpc.manifest-v8+xml")
+                    restClient.addHeader("Content-Type", "application/vnd.cpc.manifest-v8+xml")
+                    restClient.uri("https://ct.soa-gw.canadapost.ca/rs/${customerNumber}/${customerNumber}/manifest")
+                    org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
+                    if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
+                        errMsg = restResponse.xmlNode()
+                        return
+                    }
+                    responseXml = restResponse.text()
+                    
+                    JSONObject json = XML.toJSONObject(responseXml);
+                    String jsonPrettyPrintString = json.toString(); // json pretty print
+                    JsonSlurper jsonSlurper = new JsonSlurper();
+                    responseMap = (Map<String, Object>) jsonSlurper.parseText(jsonPrettyPrintString);
+                ]]>
+            </script>
+        </actions>
+    </service>
+
 </services>

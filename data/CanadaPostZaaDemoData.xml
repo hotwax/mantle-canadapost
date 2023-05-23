@@ -19,7 +19,8 @@
 
     <mantle.shipment.carrier.ShippingGatewayConfig shippingGatewayConfigId="CANADA_POST_DEMO"
                                                    shippingGatewayTypeEnumId="ShGtwyCanadaPost" description="CanadaPost API Demo"
-                                                   getRateServiceName="mantle.CanadaPostServices.get#ShippingRates" >
+                                                   getRateServiceName="mantle.CanadaPostServices.get#ShippingRates"
+                                                   requestLabelServiceName="mantle.CanadaPostServices.create#Shipment">
 
         <options optionEnumId="SgoApiToken" optionValue="NmU5M2Q1Mzk2ODg4MTcxNDowYmZhOWZjYjk4NTNkMWY1MWVlNTdh"/>
         <options optionEnumId="SgoContractId" optionValue="42708517"/>
