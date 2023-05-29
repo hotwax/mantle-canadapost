@@ -2,7 +2,7 @@
 <@compress single_line=true>
         <?xml version="1.0" encoding="utf-8"?>
         <shipment xmlns="http://www.canadapost.ca/ws/shipment-v8">
-            <group-id>${facilityId}</group-id>
+            <group-id>${groupId}</group-id>
             <requested-shipping-point>${facilityPostalCode}</requested-shipping-point>
             <delivery-spec>
                 <service-code>${serviceCode}</service-code>

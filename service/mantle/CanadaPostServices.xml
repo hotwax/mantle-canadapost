@@ -210,6 +210,14 @@
             <set field="facilityId" from="routeSegment.originFacilityId"/>
             <if condition="!facilityId || facilityId == '_NA_'">
                 <return error="true" message="Facility is not set for Shipment ${shipmentId}:${shipmentRouteSegmentSeqId}"/></if>
+
+            <entity-find-one entity-name="mantle.facility.Facility" value-field="facility">
+                <field-map field-name="facilityId"/>
+            </entity-find-one>
+
+            <if condition="!facility"><return error="true" message="No Facility found with facilityId:${facilityId}"/> </if>
+            <set field="groupId" from="facility.facilityName"/>
+
             <entity-find-one entity-name="mantle.facility.FacilityContactMech" value-field="facilityContactMech">
                 <field-map field-name="facilityId"/>
                 <field-map field-name="contactMechPurposeId" value="PostalPrimary"/>
@@ -410,7 +418,7 @@
             <set field="productName" from="productDetail.productName"/>
             <set field="productPriceValue" from="productPrice.price"/>
 
-            <set field="requestMap" type="Map" from="[facilityId:facilityId,facilityPostalCode:facilityPostalCode,contractId:contractId,
+            <set field="requestMap" type="Map" from="[facilityId:facilityId,groupId:groupId,facilityPostalCode:facilityPostalCode,contractId:contractId,
                                             serviceCode:serviceCode,sender:sender,destination:destination,weight:weight,dimensions:dimensions,
                                             shipmentItemQuantity:shipmentItemQuantity,productName:productName,productPrice:productPriceValue]"/>
 
@@ -538,6 +546,7 @@
         <out-parameters>
             <parameter name="requestMap"/>
             <parameter name="responseMap"/>
+            <parameter name="manifestResponseMap"/>
             <parameter name="errMsg"/>
         </out-parameters>
         <actions>
@@ -670,17 +679,77 @@
                     org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
                         errMsg = restResponse.xmlNode()
-                        return
+                        //return
                     }
                     responseXml = restResponse.text()
-                    
                     JSONObject json = XML.toJSONObject(responseXml);
                     String jsonPrettyPrintString = json.toString(); // json pretty print
                     JsonSlurper jsonSlurper = new JsonSlurper();
                     responseMap = (Map<String, Object>) jsonSlurper.parseText(jsonPrettyPrintString);
                 ]]>
             </script>
+            <set field="Link" from="responseMap.manifests.link"/>
+            <set field="manifestLink"/>
+            <iterate list="Link" entry="link">
+                <set field="rel" from="link.rel"/>
+                <if condition="rel=='manifest'">
+                    <set field="manifestLink" from="link.href"/>
+                </if>
+            </iterate>
+            <service-call name="mantle.CanadaPostServices.get#Manifest" in-map="context" out-map="manifest"/>
+            <set field="manifestResponseMap" from="manifest.manifestResponseMap"/>
+            <if condition="!manifestResponseMap">
+                <return error="true" message="Unable to get manifest form manifestLink: ${manifestLink}"/></if>
+
         </actions>
     </service>
 
+    <!-- ============================================= -->
+    <!-- ============== GET MANIFEST ================= -->
+    <!-- ============================================= -->
+    <service verb="get" noun="Manifest">
+        <in-parameters>
+            <parameter name="manifestLink" required="true"/>
+            <parameter name="shippingGatewayConfigId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="errMsg"/>
+            <parameter name="manifestResponseMap"/>
+        </out-parameters>
+        <actions>
+            <!-- ~~~~~~~~~~~~~ Authorization ~~~~~~~~~~~~~ -->
+
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="apiTokenOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoApiToken"/>
+            </entity-find-one>
+
+            <set field="apiToken" from="apiTokenOpt?.optionValue" type="String"/>
+            <if condition="!apiToken &amp;&amp; !contractId &amp;&amp; !customerNumber">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Get Artifact"/></if>
+            <set field="manifestResponseMap"/>
+            <script>
+                import groovy.json.JsonSlurper;
+                import org.json.JSONObject;
+                import org.json.XML;
+
+                <![CDATA[
+                    org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.GET)
+                    restClient.addHeader("Authorization", "Basic ${apiToken}")
+                    restClient.addHeader("Accept","application/vnd.cpc.manifest-v8+xml")
+                    restClient.uri("${manifestLink}")
+                    org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
+                    if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
+                        errMsg = restResponse.xmlNode()
+                        return
+                    }
+                    getManifestResponse = restResponse.text()
+                    JSONObject json = XML.toJSONObject(getManifestResponse);
+                    String jsonPrettyPrintString = json.toString(); // json pretty print
+                    JsonSlurper jsonSlurper = new JsonSlurper();
+                    manifestResponseMap = (Map<String, Object>) jsonSlurper.parseText(jsonPrettyPrintString);
+                ]]>
+            </script>
+        </actions>
+    </service>
 </services>
