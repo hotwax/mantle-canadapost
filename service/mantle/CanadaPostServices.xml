@@ -674,12 +674,13 @@
                     org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
                     restClient.addHeader("Authorization", "Basic ${apiToken}")
                     restClient.addHeader("Accept", "application/vnd.cpc.manifest-v8+xml")
-                    restClient.addHeader("Content-Type", "application/vnd.cpc.manifest-v8+xml")
+                    restClient.contentType("application/vnd.cpc.manifest-v8+xml")
+                    restClient.text(sw.toString())
                     restClient.uri("https://ct.soa-gw.canadapost.ca/rs/${customerNumber}/${customerNumber}/manifest")
                     org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
                         errMsg = restResponse.xmlNode()
-                        //return
+                        return
                     }
                     responseXml = restResponse.text()
                     JSONObject json = XML.toJSONObject(responseXml);
@@ -748,6 +749,91 @@
                     String jsonPrettyPrintString = json.toString(); // json pretty print
                     JsonSlurper jsonSlurper = new JsonSlurper();
                     manifestResponseMap = (Map<String, Object>) jsonSlurper.parseText(jsonPrettyPrintString);
+                ]]>
+            </script>
+        </actions>
+    </service>
+
+
+
+    <!-- ============================================= -->
+    <!-- ============= Void Shipment ================= -->
+    <!-- ============================================= -->
+
+    <service verb="void" noun="Shipment">
+        <in-parameters>
+            <parameter name="shipmentId" required="true"/>
+            <parameter name="shipmentRouteSegmentSeqId" required="true"/>
+            <parameter name="shipmentPackageSeqId"/>
+            <parameter name="shippingGatewayConfigId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="responseMap"/>
+            <parameter name="errMsg"/>
+        </out-parameters>
+        <actions>
+
+            <!-- ==============  API-Key Authentication  ============== -->
+
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="apiTokenOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoApiToken"/>
+            </entity-find-one>
+            <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayOption" value-field="customerNumberOpt">
+                <field-map field-name="shippingGatewayConfigId"/>
+                <field-map field-name="optionEnumId" value="SgoCustomerNumber"/>
+            </entity-find-one>
+
+            <set field="apiToken" from="apiTokenOpt?.optionValue" type="String"/>
+            <set field="customerNumber" from="customerNumberOpt?.optionValue" type="String"/>
+            <if condition="!apiToken &amp;&amp; !contractId &amp;&amp; !customerNumber">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to send Request"/></if>
+            <if condition="!customerNumber">
+                <log level="warn" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to send Request"/></if>
+
+
+            <!-- ============== Shipment Record ============== -->
+
+            <entity-find-one entity-name="mantle.shipment.Shipment" value-field="shipment" for-update="true"/>
+            <if condition="shipment == null">
+                <return error="true" message="Shipment not found with ID ${shipmentId}"/></if>
+            <entity-find-one entity-name="mantle.shipment.ShipmentRouteSegment" value-field="routeSegment"/>
+            <if condition="routeSegment == null">
+                <return error="true" message="Shipment Route Segment not found with ID ${shipmentId}:${shipmentRouteSegmentSeqId}"/></if>
+            <if condition="!shipment.fromPartyId">
+                <return error="true" message="From party not set on shipment ${shipmentId}"/></if>
+            <if condition="!shipment.toPartyId">
+                <return error="true" message="To party not set on shipment ${shipmentId}"/></if>
+            <if condition="!routeSegment.carrierPartyId || routeSegment.carrierPartyId == 'NA'">
+                <return error="true" message="Carrier not set on shipment ${shipmentId}:${shipmentRouteSegmentSeqId}"/></if>
+            <set field="shipmentMethodEnumId" from="shipmentMethodEnumId ?: routeSegment.shipmentMethodEnumId"/>
+            <if condition="!shipmentMethodEnumId">
+                <return error="true" message="Shipment method not set on shipment ${shipmentId}:${shipmentRouteSegmentSeqId}"/></if>
+
+
+            <!--            ==============  Package Route Segment  ==============-->
+
+            <entity-find-one entity-name="mantle.shipment.ShipmentPackageRouteSeg" value-field="packageRouteSeg">
+                <field-map field-name="shipmentId"/>
+                <field-map field-name="shipmentRouteSegmentSeqId"/>
+                <field-map field-name="shipmentPackageSeqId" />
+            </entity-find-one>
+            <set field="labelId" from="packageRouteSeg.gatewayLabelId"/>
+            <if condition="!labelId"><return error="true" message="Label Id not found with Shipment Package ${shipmentId}:${shipmentPackageSeqId}"/></if>
+
+            <script>
+                <![CDATA[
+                    org.moqui.util.RestClient restClient = ec.service.rest().method(org.moqui.util.RestClient.DELETE)
+                    restClient.addHeader("Accept","application/vnd.cpc.shipment-v8+xml")
+                    restClient.addHeader("Authorization", "Basic ${apiToken}")
+                    restClient.uri("https://ct.soa-gw.canadapost.ca/rs/${customerNumber}/${customerNumber}/shipment/${labelId}")
+                    org.moqui.util.RestClient.RestResponse restResponse = restClient.call()
+                    if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
+                        errMsg = restResponse.xmlNode()
+                        ec.logger.error("Either the shipment id is incorrect or the shipment has already been voided.")
+                        return
+                    }
+                    responseMap = restResponse.text()
                 ]]>
             </script>
         </actions>
