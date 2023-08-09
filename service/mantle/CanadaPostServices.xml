@@ -100,7 +100,7 @@
             <if condition="!shipmentPackage">
                 <return error="true" message="Any package not set on shipment ${shipmentId}:${shipmentPackageSeqId}"/>
             </if>
-            <if condition="!shipmentPackage.weightUomId">
+            <if condition="!shipmentPackage.weightUomId || !shipmentPackage.weight">
                 <return error="true" message="Weight or WeightUomId not set for Shipment Package ${shipmentId}:${shipmentPackageSeqId}"/>
             </if>
             <set field="weight" from="shipmentPackage.weight"/>

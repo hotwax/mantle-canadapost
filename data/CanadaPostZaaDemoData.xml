@@ -4,16 +4,6 @@
         <organization organizationName="Canada Post Corporation"/><roles roleTypeId="Carrier"/>
     </mantle.party.Party>
 
-    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGround"
-                                                   description="CanadaPost Regular Parcel"  gatewayServiceCode="DOM.RP"/>
-    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGroundCom"
-                                                   description="CanadaPost Regular Parcel for USA"  gatewayServiceCode="USA.PW.PAK"/>
-    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDayPri"
-                                                   description="CanadaPost Priority"  gatewayServiceCode="DOM.PC"/>
-    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay"
-                                                   description="CanadaPost Expedited Parcel"  gatewayServiceCode="DOM.EP"/>
-    <mantle.shipment.carrier.CarrierShipmentMethod carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay"
-                                                   description="Expedited Parcel USA"  gatewayServiceCode="USA.EP"/>
     <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="CP_Package" description="Canada Post Package" dimensionUomId="LEN_cm"
                                      boxLength="35" boxWidth="20" boxHeight="10" gatewayBoxId="package"/>
 
