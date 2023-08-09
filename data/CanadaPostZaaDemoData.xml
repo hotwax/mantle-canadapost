@@ -20,11 +20,10 @@
     <mantle.shipment.carrier.ShippingGatewayConfig shippingGatewayConfigId="CANADA_POST_DEMO"
                                                    shippingGatewayTypeEnumId="ShGtwyCanadaPost" description="CanadaPost API Demo"
                                                    getRateServiceName="mantle.CanadaPostServices.get#ShippingRates"
-                                                   requestLabelServiceName="mantle.CanadaPostServices.create#Shipment">
-
-        <options optionEnumId="SgoApiToken" optionValue="NmU5M2Q1Mzk2ODg4MTcxNDowYmZhOWZjYjk4NTNkMWY1MWVlNTdh"/>
-        <options optionEnumId="SgoContractId" optionValue="42708517"/>
-        <options optionEnumId="SgoCustomerNumber" optionValue="2004381"/>
+                                                   requestLabelServiceName="mantle.CanadaPostServices.create#ShippingLabel">
+        <options optionEnumId="SgoApiToken" optionValue=""/>
+        <options optionEnumId="SgoContractId" optionValue=""/>
+        <options optionEnumId="SgoCustomerNumber" optionValue=""/>
 
         <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="DOM.RP"/>
         <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGroundCom" gatewayServiceCode="USA.PW.PAK"/>
