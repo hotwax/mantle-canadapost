@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<entity-facade-xml type="demo">
+    <mantle.party.Party partyId="CanadaPost" partyTypeEnumId="PtyOrganization" externalId="canadaPost">
+        <organization organizationName="Canada Post Corporation"/><roles roleTypeId="Carrier"/>
+    </mantle.party.Party>
+
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="CP_Package" description="Canada Post Package" dimensionUomId="LEN_cm"
+                                     boxLength="35" boxWidth="20" boxHeight="10" gatewayBoxId="package"/>
+
+    <mantle.shipment.carrier.ShippingGatewayConfig shippingGatewayConfigId="CANADA_POST_DEMO"
+                                                   shippingGatewayTypeEnumId="ShGtwyCanadaPost" description="CanadaPost API Demo"
+                                                   getRateServiceName="mantle.CanadaPostServices.get#ShippingRates"
+                                                   requestLabelServiceName="mantle.CanadaPostServices.create#ShippingLabel">
+        <options optionEnumId="SgoApiToken" optionValue=""/>
+        <options optionEnumId="SgoContractId" optionValue=""/>
+        <options optionEnumId="SgoCustomerNumber" optionValue=""/>
+
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="DOM.RP"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthGroundCom" gatewayServiceCode="USA.PW.PAK"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDayPri" gatewayServiceCode="DOM.PC"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="DOM.EP"/>
+        <methods carrierPartyId="CanadaPost" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="USA.EP"/>
+
+        <boxTypes shipmentBoxTypeId="CP_Package" gatewayBoxId="package"/>
+
+    </mantle.shipment.carrier.ShippingGatewayConfig>
+
+    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
+    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="DefaultShipmentGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
+
+    <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
+    <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
+
+    <mantle.product.store.ProductStore productStoreId="POPC_CN_DEFAULT">
+        <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthGround" />
+        <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDayPri" />
+        <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDay" />
+    </mantle.product.store.ProductStore>
+
+</entity-facade-xml>
