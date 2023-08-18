@@ -178,10 +178,10 @@
                 <field-map field-name="optionEnumId" value="SgoCustomerNumber"/>
             </entity-find-one>
             <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to get Shipping rates"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to create ShippingLabel"/>
             </if>
             <if condition="(!contractIdOpt || !contractIdOpt.optionValue) || (!customerNumberOpt || !customerNumberOpt.optionValue)">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to get Shipping rates"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to create ShippingLabel"/>
             </if>
             <!-- ~~~~~~~~~~~~~ shipment:routeSegment ~~~~~~~~~~~~~ -->
 
@@ -509,10 +509,10 @@
             </entity-find-one>
 
             <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to get Shipping rates"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to transmit Shipment"/>
             </if>
             <if condition="(!contractIdOpt || !contractIdOpt.optionValue) &amp;&amp; (!customerNumberOpt || !customerNumberOpt.optionValue)">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to get Shipping rates"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number or Contract ID, unable to transmit Shipment"/>
             </if>
 
 
@@ -700,10 +700,10 @@
             </entity-find-one>
 
             <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to void Shipping Label"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, unable to void ShippingLabel"/>
             </if>
             <if condition="!customerNumberOpt || !customerNumberOpt.optionValue">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number, unable to void Shipping Label"/>
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Customer Number, unable to void ShippingLabel"/>
             </if>
 
 

@@ -25,14 +25,13 @@
 
     </mantle.shipment.carrier.ShippingGatewayConfig>
 
-    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
     <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="DefaultShipmentGatewayConfigId" preferenceValue="CANADA_POST_DEMO"/>
 
-    <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
     <mantle.party.PartySetting partyId="ORG_CANADA_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="CANADA_POST_DEMO"/>
 
     <mantle.product.store.ProductStore productStoreId="POPC_CN_DEFAULT">
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthGround" />
+        <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthGroundCom" />
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDayPri" />
         <shipOptions carrierPartyId="canadaPost" shipmentMethodEnumId="ShMthNextDay" />
     </mantle.product.store.ProductStore>
